@@ -7,6 +7,44 @@ var context = canvas.getContext('2d');
 var FPS = 60;
 var timePerFrame = 1000 / 60;
 
+var Keys = {
+	currentKeys: [],
+	prevKeys: [],
+	
+	A: 65,
+	D: 68,
+	Right: 39,
+	Left: 37,
+	Space: 32,
+	Escape: 27,
+	
+	// Triggers as long as the key is held down.
+	isKeyDown: function(keyCode) {
+		return this.currentKeys[keyCode];
+	},
+	
+	// Only triggers once, even if the key is held down. It checks to see if
+	// the key was not pressed last frame and it is pressed this frame.
+	isKeyPressed: function(keyCode) {
+		return !this.prevKeys[keyCode] && this.currentKeys[keyCode];
+	},
+	
+	onKeyDown: function(event) {
+		this.currentKeys[event.keyCode] = true;
+	},
+	
+	onKeyUp: function(event) {
+		this.currentKeys[event.keyCode] = false;
+	},
+
+	// backup key states
+	update: function() {
+		for(var i = 0; i < this.currentKeys.length; ++i) {
+			this.prevKeys[i] = this.currentKeys[i];
+		}
+	}
+};
+
 function clearCanvas(strColor) {
 	context.fillStyle = strColor;
 	
@@ -56,11 +94,23 @@ GameStateManager.prototype.update = function(dt) {
 		this.poppingState = false;
 	}
 	
+//	console.log(this.states[this.states.length - 1]);
+	
 	this.states[this.states.length - 1].update(dt);
 };
 
 GameStateManager.prototype.render = function() {
 	this.states[this.states.length - 1].render();
+};
+
+var Game = { };
+
+Game.update = function(dt) {
+	Game.gsm.update(dt);
+};
+
+Game.render = function() {
+	Game.gsm.render();
 };
 
 // base class for game states
@@ -79,7 +129,9 @@ function PlayState() {
 }
 
 MenuState.prototype.update = function(dt) {
-	
+	if(Keys.isKeyPressed(Keys.Space)) {
+		console.log('space pressed');
+	}
 };
 
 MenuState.prototype.render = function() {
@@ -92,16 +144,6 @@ PlayState.prototype.update = function(dt) {
 
 PlayState.prototype.render = function() {
 	clearCanvas("#ff0000");
-};
-
-var Game = { };
-
-Game.update = function(dt) {
-	Game.gsm.update(dt);
-};
-
-Game.render = function() {
-	Game.gsm.render();
 };
 
 window.onload = function() {
@@ -140,6 +182,9 @@ function init() {
 	Game.accumulator = 0;
 	Game.gsm = new GameStateManager();
 	Game.gsm.states.push(new MenuState());
+	
+	window.addEventListener('keyup', function(event) { Keys.onKeyUp(event); }, false);
+	window.addEventListener('keydown', function(event) { Keys.onKeyDown(event); }, false);
 }
 
 function startGame(images) {
@@ -160,6 +205,7 @@ function startGame(images) {
 		}
 		
 		Game.render();
+		Keys.update();
 	}
 	
 	gameLoop(window.performance.now());
