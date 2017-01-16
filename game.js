@@ -73,7 +73,7 @@ GameStateManager.prototype.popState = function() {
 
 GameStateManager.prototype.changeState = function(gameState) {
 	this.changingState = true;
-	this.tempState = true;
+	this.tempState = gameState;
 };
 
 GameStateManager.prototype.update = function(dt) {
@@ -93,8 +93,6 @@ GameStateManager.prototype.update = function(dt) {
 		this.states.pop();
 		this.poppingState = false;
 	}
-	
-//	console.log(this.states[this.states.length - 1]);
 	
 	this.states[this.states.length - 1].update(dt);
 };
@@ -130,7 +128,7 @@ function PlayState() {
 
 MenuState.prototype.update = function(dt) {
 	if(Keys.isKeyPressed(Keys.Space)) {
-		console.log('space pressed');
+		Game.gsm.changeState(new PlayState());
 	}
 };
 
@@ -139,7 +137,9 @@ MenuState.prototype.render = function() {
 };
 
 PlayState.prototype.update = function(dt) {
-	
+	if(Keys.isKeyPressed(Keys.Space)) {
+		Game.gsm.changeState(new MenuState());
+	}
 };
 
 PlayState.prototype.render = function() {
