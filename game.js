@@ -7,6 +7,8 @@ var context = canvas.getContext('2d');
 var FPS = 60;
 var timePerFrame = 1000 / 60;
 
+var resources = { };
+
 var Keys = {
 	currentKeys: [],
 	prevKeys: [],
@@ -45,6 +47,9 @@ var Keys = {
 	}
 };
 
+
+
+// Clears the canvas with the color that is passed in.
 function clearCanvas(strColor) {
 	context.fillStyle = strColor;
 	
@@ -53,6 +58,33 @@ function clearCanvas(strColor) {
 	context.closePath();
 	context.fill();
 }
+
+// Creates a rectangle and sets its coordinates to (x, y) and width and height.
+function Rectangle(x, y, width, height) {
+	this.x = x;
+	this.y = y;
+	this.width = width;
+	this.height = height;
+}
+
+Rectangle.prototype.intersects = function(rectangle) {
+	if(rectangle.x < this.x + this.width && this.x < rectangle.x + rectangle.width &&
+	  	rectangle.y < this.y + this.height && rectangle.y + rectangle.height > this.y) {
+		return true;
+	}
+	
+	return false;
+};
+
+function Entity(image) {
+	this.image = image;
+	this.boundingBox = new Rectangle(0, 0, this.image.width, this.image.height);
+}
+
+Entity.prototype.setPosition = function(x, y) {
+	this.boundingBox.x = x;
+	this.boundingBox.y = y;
+};
 
 function GameStateManager() {
 	this.states = [];
@@ -118,10 +150,12 @@ GameState.prototype.update = function(dt) { };
 
 GameState.prototype.render = function() { };
 
+// The menu state
 function MenuState() {
 	GameState.call();
 }
 
+// State where the player collects raindrops.
 function PlayState() {
 	GameState.call();
 }
@@ -133,7 +167,21 @@ MenuState.prototype.update = function(dt) {
 };
 
 MenuState.prototype.render = function() {
-	clearCanvas("#1d00ff");
+	clearCanvas("#5a9aff");
+	
+	var title = "Raindrop";
+	var displayTitle = context.measureText(title);
+	
+	var text = "Press Space to start";
+	var displayText = context.measureText(text);
+	
+	context.beginPath();
+	context.fillStyle = "#000000";
+	context.font = "30px arial";
+	
+	context.fillText(title, canvas.width / 2 - displayTitle.width / 2, canvas.height /4);
+	context.fillText(text, canvas.width / 2 - displayText.width / 2, canvas.height / 2);
+	context.closePath();
 };
 
 PlayState.prototype.update = function(dt) {
@@ -155,8 +203,8 @@ window.onload = function() {
 	loadImages(sources, startGame);
 };
 
+// Load images to be used.
 function loadImages(sources, gameStart) {
-	var images = {};
 	var numImages = 0;
 	var numImagesLoaded = 0;
 	
@@ -165,13 +213,13 @@ function loadImages(sources, gameStart) {
 	}
 	
 	for(i in sources) {
-		images[i] = new Image();
-		images[i].src = sources[i];
+		resources[i] = new Image();
+		resources[i].src = sources[i];
 		
 		// once all images are loaded, start the game
-		images[i].onload = function() {
+		resources[i].onload = function() {
 			if(++numImagesLoaded >= numImages) {
-				gameStart(images);
+				gameStart();
 			}
 		};
 	}
@@ -187,7 +235,7 @@ function init() {
 	window.addEventListener('keydown', function(event) { Keys.onKeyDown(event); }, false);
 }
 
-function startGame(images) {
+function startGame() {
 	console.log('starting game');
 	
 	init();
