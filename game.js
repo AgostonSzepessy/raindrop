@@ -26,7 +26,11 @@ var Keys = {
 	// Only triggers once, even if the key is held down. It checks to see if
 	// the key was not pressed last frame and it is pressed this frame.
 	isKeyPressed: function(keyCode) {
-		return !this.prevKeys[keyCode] && this.currentKeys[keyCode];
+		if(!this.prevKeys[keyCode] && this.currentKeys[keyCode]) {
+			console.log('key pressed');
+			return true;
+		}
+		return false;
 	},
 	
 	onKeyDown: function(event) {
@@ -105,6 +109,8 @@ var Game = { };
 
 Game.update = function(dt) {
 	Game.gsm.update(dt);
+	Keys.update();
+
 };
 
 Game.render = function() {
@@ -205,7 +211,6 @@ function startGame(images) {
 		}
 		
 		Game.render();
-		Keys.update();
 	}
 	
 	gameLoop(window.performance.now());
