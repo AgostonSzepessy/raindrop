@@ -7,7 +7,11 @@ var context = canvas.getContext('2d');
 var FPS = 60;
 var timePerFrame = 1000 / 60;
 
+// Stores the pictures.
 var resources = { };
+
+// 64 pixels per meter
+var PPM = 64;
 
 var Keys = {
 	currentKeys: [],
@@ -29,7 +33,6 @@ var Keys = {
 	// the key was not pressed last frame and it is pressed this frame.
 	isKeyPressed: function(keyCode) {
 		if(!this.prevKeys[keyCode] && this.currentKeys[keyCode]) {
-			console.log('key pressed');
 			return true;
 		}
 		return false;
@@ -83,11 +86,108 @@ Rectangle.prototype.intersects = function(rectangle) {
 function Entity(image) {
 	this.image = image;
 	this.boundingBox = new Rectangle(0, 0, this.image.width, this.image.height);
+	
+	this.dx = 0;
+	this.dy = 0;
+	this.gravity = 0.0005;
+
 }
 
+// Sets the position of the Entity to (x, y)
 Entity.prototype.setPosition = function(x, y) {
 	this.boundingBox.x = x;
 	this.boundingBox.y = y;
+};
+
+// Checks if the Entity is still on the canvas
+Entity.prototype.isInBounds = function() {
+	return this.boundingBox.x + this.boundingBox.width > 0 && this.boundingBox.x < canvas.width &&
+		this.boundingBox.y > 0 && this.boundingBox.y < canvas.height;
+};
+
+Entity.prototype.update = function(dt) {
+	
+};
+
+Entity.prototype.render = function() {
+	context.drawImage(this.image, this.boundingBox.x, this.boundingBox.y);
+};
+
+function Collectible(type) {
+	Entity.call(this, resources['raindrop']);
+	this.type = type;
+	
+}
+
+Collectible.RAINDROP = 0;
+Collectible.ROCK = 1;
+
+Collectible.prototype = Object.create(Entity.prototype);
+Collectible.prototype.constructor = Collectible;
+
+Collectible.prototype.update = function(dt) {
+	this.dy += this.gravity * dt;
+	this.boundingBox.y += this.dy * dt;
+};
+
+function Player() {
+	Entity.call(this, resources['bucket']);
+	this.boundingBox.x = canvas.width / 2 - this.boundingBox.width / 2;
+	this.boundingBox.y = canvas.height - this.boundingBox.height - 5;
+	
+	this.acceleration = 0.05;
+	this.maxVelocity = 0.5;
+	
+	this.movingRight = false;
+	this.movingLeft = false;
+}
+
+Player.prototype = Object.create(Entity.prototype);
+Player.prototype.constructor = Player;
+
+Player.prototype.update = function(dt) {
+	if(this.movingRight) {
+		this.dx += this.acceleration * dt;
+		
+		if(this.dx > this.maxVelocity) {
+			this.dx = this.maxVelocity;
+		}
+	}
+	else if(this.movingLeft) {
+		this.dx -= this.acceleration * dt;
+		
+		if(this.dx < - this.maxVelocity) {
+			this.dx = -this.maxVelocity;
+		}
+	}
+	// slow player down if he's not moving
+	else {
+		this.dx *= 0.001;
+		
+		if(this.dx < 0.000001) {
+			this.dx = 0;
+		}
+		
+		console.log('slow player down');
+	}
+	
+	this.boundingBox.x += this.dx * dt;
+	
+	// check boundaries
+	if(this.boundingBox.x < 0) {
+		this.boundingBox.x = 0;
+	}
+	else if(this.boundingBox.x + this.boundingBox.width > canvas.width) {
+		this.boundingBox.x = canvas.width - this.boundingBox.width;
+	}
+};
+
+Player.prototype.setMovingRight = function(isMovingRight) {
+	this.movingRight = isMovingRight;
+};
+
+Player.prototype.setMovingLeft = function(isMovingLeft) {
+	this.movingLeft = isMovingLeft;
 };
 
 function GameStateManager() {
@@ -113,7 +213,6 @@ GameStateManager.prototype.changeState = function(gameState) {
 };
 
 GameStateManager.prototype.update = function(dt) {
-	
 	if(this.changingState) {
 		this.states.pop();
 		this.states.push(this.tempState);
@@ -164,8 +263,15 @@ function MenuState() {
 // State where the player collects raindrops.
 function PlayState() {
 	GameState.call();
+	
+	this.collectibles = [];
+	this.collectibles.push(new Collectible(Collectible.RAINDROP));
+	this.collectibles[0].setPosition(canvas.width / 2, 0);
+	
+	this.player = new Player();
 }
 
+// Main menu state and titlescreen
 MenuState.prototype.update = function(dt) {
 	if(Keys.isKeyPressed(Keys.Space)) {
 		Game.gsm.changeState(new PlayState());
@@ -194,10 +300,39 @@ PlayState.prototype.update = function(dt) {
 	if(Keys.isKeyPressed(Keys.Space)) {
 		Game.gsm.changeState(new MenuState());
 	}
+	
+	if(Keys.isKeyDown(Keys.A) || Keys.isKeyDown(Keys.Left)) {
+		this.player.movingLeft = true;
+	}
+	else {
+		this.player.movingLeft = false;
+	}
+	
+	if(Keys.isKeyDown(Keys.D) || Keys.isKeyDown(Keys.Right)) {
+		this.player.movingRight = true;
+	}
+	else {
+		this.player.movingRight = false;
+	}
+	
+	for(var i = 0; i < this.collectibles.length; ++i) {
+		this.collectibles[i].update(dt);
+		if(!this.collectibles[i].isInBounds()) {
+			this.collectibles.splice(i, 1);
+		}
+	}
+	
+	this.player.update(dt);
 };
 
 PlayState.prototype.render = function() {
 	clearCanvas("#ff0000");
+	
+	for(var i = 0; i < this.collectibles.length; ++i) {
+		this.collectibles[i].render();
+	}
+	
+	this.player.render();
 };
 
 window.onload = function() {
