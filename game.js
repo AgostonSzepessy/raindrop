@@ -336,6 +336,11 @@ PlayState.prototype.update = function(dt) {
 			this.collectibles.splice(i, 1);
 		}
 	}
+	
+	if(this.player.numRocks >= 3) {
+		this.sendData();
+		Game.gsm.changeState(new MenuState());
+	}
 };
 
 PlayState.prototype.render = function() {
@@ -384,6 +389,26 @@ PlayState.prototype.generateCollectible = function(dt) {
 		
 		this.collectibleTime = 0;
 	}
+};
+
+PlayState.prototype.sendData = function() {
+	var request = new XMLHttpRequest();
+	
+	var url = "score.php";
+	var data = "score=" + this.player.numRaindrops;
+	
+	request.open("POST", url, true);
+	request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+	
+	request.onreadystatechange = function() {
+		if(request.readyState == 4 && request.status == 200) {
+			var returnData = request.responseText;
+			console.log(returnData);
+		}
+	};
+	
+	request.send(data);
+	console.log('data sent');
 };
 
 window.onload = function() {
