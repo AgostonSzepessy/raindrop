@@ -10,9 +10,6 @@ var timePerFrame = 1000 / 60;
 // Stores the pictures.
 var resources = { };
 
-// 64 pixels per meter
-var PPM = 64;
-
 var Keys = {
 	currentKeys: [],
 	prevKeys: [],
@@ -54,8 +51,6 @@ var Keys = {
 	}
 };
 
-
-
 // Clears the canvas with the color that is passed in.
 function clearCanvas(strColor) {
 	context.fillStyle = strColor;
@@ -74,6 +69,7 @@ function Rectangle(x, y, width, height) {
 	this.height = height;
 }
 
+// Checks if 2 rectangles are intersecting
 Rectangle.prototype.intersects = function(rectangle) {
 	if(rectangle.x < this.x + this.width && this.x < rectangle.x + rectangle.width &&
 	  	rectangle.y < this.y + this.height && rectangle.y + rectangle.height > this.y) {
@@ -83,6 +79,7 @@ Rectangle.prototype.intersects = function(rectangle) {
 	return false;
 };
 
+// Base class for the entities in the game.
 function Entity(image) {
 	this.image = image;
 	this.boundingBox = new Rectangle(0, 0, this.image.width, this.image.height);
@@ -106,7 +103,6 @@ Entity.prototype.isInBounds = function() {
 };
 
 Entity.prototype.update = function(dt) {
-	
 };
 
 Entity.prototype.render = function() {
@@ -119,7 +115,10 @@ function Collectible(type) {
 	
 }
 
+// Indicates that the Collectible is a raindrop
 Collectible.RAINDROP = 0;
+
+// Indicates that the collectible is a rock
 Collectible.ROCK = 1;
 
 Collectible.prototype = Object.create(Entity.prototype);
@@ -130,6 +129,7 @@ Collectible.prototype.update = function(dt) {
 	this.boundingBox.y += this.dy * dt;
 };
 
+// Player class
 function Player() {
 	Entity.call(this, resources['bucket']);
 	this.boundingBox.x = canvas.width / 2 - this.boundingBox.width / 2;
@@ -140,6 +140,9 @@ function Player() {
 	
 	this.movingRight = false;
 	this.movingLeft = false;
+	
+	this.numRaindrops = 0;
+	this.numRocks = 0;
 }
 
 Player.prototype = Object.create(Entity.prototype);
@@ -167,8 +170,6 @@ Player.prototype.update = function(dt) {
 		if(this.dx < 0.000001) {
 			this.dx = 0;
 		}
-		
-		console.log('slow player down');
 	}
 	
 	this.boundingBox.x += this.dx * dt;
@@ -180,14 +181,6 @@ Player.prototype.update = function(dt) {
 	else if(this.boundingBox.x + this.boundingBox.width > canvas.width) {
 		this.boundingBox.x = canvas.width - this.boundingBox.width;
 	}
-};
-
-Player.prototype.setMovingRight = function(isMovingRight) {
-	this.movingRight = isMovingRight;
-};
-
-Player.prototype.setMovingLeft = function(isMovingLeft) {
-	this.movingLeft = isMovingLeft;
 };
 
 function GameStateManager() {
@@ -323,6 +316,13 @@ PlayState.prototype.update = function(dt) {
 	}
 	
 	this.player.update(dt);
+	
+	for(var i = 0; i < this.collectibles.length; ++i) {
+		if(this.collectibles[i].boundingBox.intersects(this.player.boundingBox)) {
+			this.player.numRaindrops++;
+			this.collectibles.splice(i, 1);
+		}
+	}
 };
 
 PlayState.prototype.render = function() {
@@ -333,6 +333,18 @@ PlayState.prototype.render = function() {
 	}
 	
 	this.player.render();
+	
+	var raindropText = "Raindrops: " + this.player.numRaindrops;
+	
+	var textMeasurement = context.measureText(raindropText);
+	
+	console.log(textMeasurement.height);
+	
+	context.font = "30px arial";
+	context.fillStyle = "#000000";
+	context.beginPath();
+	context.fillText(raindropText, canvas.width - textMeasurement.width, 30);
+	context.closePath();
 };
 
 window.onload = function() {
