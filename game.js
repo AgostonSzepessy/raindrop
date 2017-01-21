@@ -99,7 +99,7 @@ Entity.prototype.setPosition = function(x, y) {
 // Checks if the Entity is still on the canvas
 Entity.prototype.isInBounds = function() {
 	return this.boundingBox.x + this.boundingBox.width > 0 && this.boundingBox.x < canvas.width &&
-		this.boundingBox.y > 0 && this.boundingBox.y < canvas.height;
+		this.boundingBox.y > -100 && this.boundingBox.y < canvas.height;
 };
 
 Entity.prototype.update = function(dt) {
@@ -109,8 +109,8 @@ Entity.prototype.render = function() {
 	context.drawImage(this.image, this.boundingBox.x, this.boundingBox.y);
 };
 
-function Collectible(type) {
-	Entity.call(this, resources['raindrop']);
+function Collectible(type, resName) {
+	Entity.call(this, resources[resName]);
 	this.type = type;
 	
 }
@@ -258,10 +258,15 @@ function PlayState() {
 	GameState.call();
 	
 	this.collectibles = [];
-	this.collectibles.push(new Collectible(Collectible.RAINDROP));
+	this.collectibles.push(new Collectible(Collectible.RAINDROP, 'raindrop'));
 	this.collectibles[0].setPosition(canvas.width / 2, 0);
 	
 	this.player = new Player();
+	
+	// time elapsed between collectible generations
+	this.collectibleTime = 0;
+	// generate collectible every 500 milliseconds
+	this.generationTime = 1000;
 }
 
 // Main menu state and titlescreen
@@ -308,6 +313,8 @@ PlayState.prototype.update = function(dt) {
 		this.player.movingRight = false;
 	}
 	
+	this.generateCollectible(dt);
+	
 	for(var i = 0; i < this.collectibles.length; ++i) {
 		this.collectibles[i].update(dt);
 		if(!this.collectibles[i].isInBounds()) {
@@ -338,19 +345,43 @@ PlayState.prototype.render = function() {
 	
 	var textMeasurement = context.measureText(raindropText);
 	
-	console.log(textMeasurement.height);
-	
 	context.font = "30px arial";
 	context.fillStyle = "#000000";
-	context.beginPath();
 	context.fillText(raindropText, canvas.width - textMeasurement.width, 30);
-	context.closePath();
+};
+
+PlayState.prototype.generateCollectible = function(dt) {
+	this.collectibleTime += dt;
+	
+	if(this.collectibleTime >= this.generationTime) {
+		// type is either 0 or 1
+		var type = Math.floor((Math.random() * 100) + 1) % 2;
+		
+		var collectible;
+		
+		if(type === Collectible.RAINDROP) {
+			collectible = new Collectible(type, 'raindrop');
+		}
+		else {
+			collectible = new Collectible(type, 'rock');
+		}
+		
+		var x = Math.floor(Math.random() * canvas.width);
+		
+		collectible.boundingBox.x = x;
+		collectible.boundingBox.y = -collectible.boundingBox.height;
+		
+		this.collectibles.push(collectible);
+		
+		this.collectibleTime = 0;
+	}
 };
 
 window.onload = function() {
 	var sources = {
 		bucket: '/raindrop/res/bucket.png',
-		raindrop: '/raindrop/res/raindrop.png'
+		raindrop: '/raindrop/res/raindrop.png',
+		rock: '/raindrop/res/rock.png'
 	};
 	
 	loadImages(sources, startGame);
