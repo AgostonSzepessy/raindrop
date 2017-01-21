@@ -326,7 +326,13 @@ PlayState.prototype.update = function(dt) {
 	
 	for(var i = 0; i < this.collectibles.length; ++i) {
 		if(this.collectibles[i].boundingBox.intersects(this.player.boundingBox)) {
-			this.player.numRaindrops++;
+			if(this.collectibles[i].type === Collectible.RAINDROP) {
+				this.player.numRaindrops++;
+			}
+			else {
+				this.player.numRocks++;
+			}
+			
 			this.collectibles.splice(i, 1);
 		}
 	}
@@ -342,12 +348,15 @@ PlayState.prototype.render = function() {
 	this.player.render();
 	
 	var raindropText = "Raindrops: " + this.player.numRaindrops;
+	var rockText = "Rocks: " + this.player.numRocks;
 	
-	var textMeasurement = context.measureText(raindropText);
+	var raindropTextMeasurement = context.measureText(raindropText);
+	var rockTextMeasurement = context.measureText(rockText);
 	
 	context.font = "30px arial";
 	context.fillStyle = "#000000";
-	context.fillText(raindropText, canvas.width - textMeasurement.width, 30);
+	context.fillText(raindropText, canvas.width - raindropTextMeasurement.width, 30);
+	context.fillText(rockText, canvas.width - rockTextMeasurement.width, 60);
 };
 
 PlayState.prototype.generateCollectible = function(dt) {
