@@ -251,6 +251,9 @@ GameState.prototype.render = function() { };
 // The menu state
 function MenuState() {
 	GameState.call();
+	
+	this.highScoreText = "Loading High Score";
+	this.getHighScore();
 }
 
 // State where the player collects raindrops.
@@ -285,20 +288,35 @@ MenuState.prototype.render = function() {
 	var text = "Press Space to start";
 	var displayText = context.measureText(text);
 	
+	var scoreMeasurement = context.measureText(this.highScoreText);
+	
 	context.beginPath();
 	context.fillStyle = "#000000";
 	context.font = "30px arial";
 	
 	context.fillText(title, canvas.width / 2 - displayTitle.width / 2, canvas.height /4);
 	context.fillText(text, canvas.width / 2 - displayText.width / 2, canvas.height / 2);
+	context.fillText(this.highScoreText, canvas.width / 2 - scoreMeasurement.width / 2, canvas.height * 3 / 4);
 	context.closePath();
 };
 
-PlayState.prototype.update = function(dt) {
-	if(Keys.isKeyPressed(Keys.Space)) {
-		Game.gsm.changeState(new MenuState());
-	}
+this.MenuState.prototype.getHighScore = function(callback) {
+	var request = new XMLHttpRequest();
+	request.open("GET", "getscore.php", true);
 	
+	var that = this;
+	
+	request.onload = function() {
+		if(request.readyState == request.DONE && request.status == 200) {
+			that.highScoreText = "High Score: " + request.responseText;
+			console.log(that.highScoreText);
+		}
+	};
+	
+	request.send();
+};
+
+PlayState.prototype.update = function(dt) {	
 	if(Keys.isKeyDown(Keys.A) || Keys.isKeyDown(Keys.Left)) {
 		this.player.movingLeft = true;
 	}
@@ -324,6 +342,7 @@ PlayState.prototype.update = function(dt) {
 	
 	this.player.update(dt);
 	
+	// check if bucket intersects with raindrops and rocks
 	for(var i = 0; i < this.collectibles.length; ++i) {
 		if(this.collectibles[i].boundingBox.intersects(this.player.boundingBox)) {
 			if(this.collectibles[i].type === Collectible.RAINDROP) {
@@ -337,6 +356,7 @@ PlayState.prototype.update = function(dt) {
 		}
 	}
 	
+	// if player collected 3 rocks, it's game over
 	if(this.player.numRocks >= 3) {
 		this.sendData();
 		Game.gsm.changeState(new MenuState());
@@ -380,7 +400,7 @@ PlayState.prototype.generateCollectible = function(dt) {
 			collectible = new Collectible(type, 'rock');
 		}
 		
-		var x = Math.floor(Math.random() * canvas.width);
+		var x = Math.floor(Math.random() * (canvas.width - collectible.boundingBox.width));
 		
 		collectible.boundingBox.x = x;
 		collectible.boundingBox.y = -collectible.boundingBox.height;
