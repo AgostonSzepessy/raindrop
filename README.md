@@ -1,3 +1,6 @@
+#About
+This is a game where you have a bucket and you have to collect raindrops, while avoiding the rocks. You can collect a maximum of 3 rocks before the game is over. I wrote this game to learn how to use AJAX to communicate between JavaScript and PHP scripts that access a database.
+
 #Building
 When I was testing the game, I ran it on XAMPP so that's what the instructions will be using. 
 
